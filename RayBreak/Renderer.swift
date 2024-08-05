@@ -19,12 +19,12 @@ protocol RendererProtocol {
 
 class Renderer : NSObject {
     
-    var metalVeiw : MTKView?
     var device : MTLDevice?
     var pipelineState : MTLRenderPipelineState?
     var commandQueue : MTLCommandQueue?
     var vertexBuffer : MTLBuffer?
     var indexBuffer : MTLBuffer?
+    var renderDelegate : RendererProtocol?
     
     let vertexData : [Float] = [
         -1.0 , 1.0 , 0 ,  //v0
@@ -46,12 +46,13 @@ class Renderer : NSObject {
     
     var time : Float = 0
     
-    init(device: MTLDevice? = nil) {
+    init(device: MTLDevice? = nil,delegate:RendererProtocol) {
         self.device = device
         self.commandQueue = self.device?.makeCommandQueue()
         super.init()
         buildModel()
         setupPipelineState()
+        self.renderDelegate = delegate
     }
     
     func initMetalView(view:MTKView) {
@@ -63,11 +64,13 @@ class Renderer : NSObject {
     
     func buildModel() {
         
-        let size = MemoryLayout<Float>.stride * vertexData.count
+        let size = MemoryLayout<Float>.size * vertexData.count
         
-        vertexBuffer = device?.makeBuffer(bytes: vertexData, length: size, options: [])
+        vertexBuffer = device?.makeBuffer(bytes:  vertexData, length: size, options: [])
         
-        indexBuffer = device?.makeBuffer(bytes: indices, length: MemoryLayout<UInt16>.stride * indices.count, options: [])
+        indexBuffer = device?.makeBuffer(bytes: indices, 
+                                         length: indices.count * MemoryLayout<UInt16>.size ,
+                                         options: [])
         
     }
     
@@ -98,7 +101,7 @@ class Renderer : NSObject {
         guard let pipelineState = self.pipelineState , let indexBuffer = indexBuffer else {return}
         
         commandQueue = device?.makeCommandQueue()
-        
+         
         let commandBuffer = commandQueue?.makeCommandBuffer()
         
         let commandEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: descriptor)
@@ -106,8 +109,6 @@ class Renderer : NSObject {
         commandEncoder?.setRenderPipelineState(pipelineState)
         
         commandEncoder?.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        commandEncoder?.setVertexBuffer(indexBuffer, offset: 0, index: 0)
-        //commandEncoder?.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 6)
         
         time += 1 / Float(view.preferredFramesPerSecond)
         
@@ -115,9 +116,11 @@ class Renderer : NSObject {
         
         commandEncoder?.setVertexBytes(&constants, length: MemoryLayout<Constants>.stride, index: 1)
         
-        print("Renderer_draw : \(constants.animateBy)")
-        
-        commandEncoder?.drawIndexedPrimitives(type: .triangle, indexCount: indices.count, indexType: .uint16, indexBuffer: indexBuffer, indexBufferOffset: 0)
+        commandEncoder?.drawIndexedPrimitives(type: .triangle,
+                                              indexCount: indices.count,
+                                              indexType: .uint16,
+                                              indexBuffer: indexBuffer,
+                                              indexBufferOffset: 0)
         
         commandEncoder?.endEncoding()
         
