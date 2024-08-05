@@ -8,6 +8,7 @@
 import Foundation
 import MetalKit
 import Metal
+import simd
 
 protocol RendererProtocol {
     func setupRenderPassdescriptor(view:MTKView)
@@ -25,6 +26,13 @@ class Renderer : NSObject {
     var vertexBuffer : MTLBuffer?
     var indexBuffer : MTLBuffer?
     var renderDelegate : RendererProtocol?
+    
+    var vertices : [Vertex] = [
+        Vertex(position: SIMD3<Float>(-1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.0, 0.0, 1.0)),
+        Vertex(position: SIMD3<Float>(-1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 1.0, 0.0, 1.0)),
+        Vertex(position: SIMD3<Float>(1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 0.0, 1.0, 1.0)),
+        Vertex(position: SIMD3<Float>(1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.0, 1.0, 1.0))
+    ]
     
     let vertexData : [Float] = [
         -1.0 , 1.0 , 0 ,  //v0
@@ -64,9 +72,9 @@ class Renderer : NSObject {
     
     func buildModel() {
         
-        let size = MemoryLayout<Float>.size * vertexData.count
+        let size = MemoryLayout<Vertex>.size * vertices.count
         
-        vertexBuffer = device?.makeBuffer(bytes:  vertexData, length: size, options: [])
+        vertexBuffer = device?.makeBuffer(bytes: vertices, length: size, options: [])
         
         indexBuffer = device?.makeBuffer(bytes: indices, 
                                          length: indices.count * MemoryLayout<UInt16>.size ,
@@ -86,6 +94,19 @@ class Renderer : NSObject {
         descriptor.fragmentFunction = fragment_shader
         descriptor.colorAttachments[0].pixelFormat = .bgra8Unorm
         descriptor.depthAttachmentPixelFormat = .depth32Float
+        
+        let vertexDescriptor = MTLVertexDescriptor()
+        vertexDescriptor.attributes[0].format = .float3
+        vertexDescriptor.attributes[0].offset = 0
+        vertexDescriptor.attributes[0].bufferIndex = 0
+        
+        vertexDescriptor.attributes[1].format = .float4
+        vertexDescriptor.attributes[1].offset = MemoryLayout<SIMD4<Float>>.stride
+        vertexDescriptor.attributes[1].bufferIndex = 0
+        
+        vertexDescriptor.layouts[0].stride = MemoryLayout<Vertex>.stride
+        
+        descriptor.vertexDescriptor = vertexDescriptor
         
         do {
             pipelineState = try device?.makeRenderPipelineState(descriptor: descriptor)
