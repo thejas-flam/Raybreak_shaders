@@ -31,7 +31,7 @@ class ViewController: UIViewController {
         metalView.clearColor = Colors.wenderlichGreen
         
         metalView.delegate = self
-        renderer = Renderer(device: metalView.device, delegate: self)
+        renderer = Renderer(device: metalView.device)
     }
     
 }
@@ -47,27 +47,6 @@ extension ViewController : MTKViewDelegate {
         guard let drawable = view.currentDrawable , let descriptor = view.currentRenderPassDescriptor else {return}
         
         renderer?.drawMetalView(drawable: drawable, descriptor: descriptor,view: view)
-        
-    }
-    
-    
-}
-
-extension ViewController : RendererProtocol {
-    
-    func setupRenderPassdescriptor(view: MTKView) {
-        
-    }
-    
-    func setupRenderSceneDescriptor(view: MTKView) {
-        
-    }
-    
-    func setupRenderLightSourceDescriptor(view: MTKView) {
-        
-    }
-    
-    func setupGuassionBlurr(view: MTKView) {
         
     }
     

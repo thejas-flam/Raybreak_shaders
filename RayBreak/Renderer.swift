@@ -10,14 +10,6 @@ import MetalKit
 import Metal
 import simd
 
-protocol RendererProtocol {
-    func setupRenderPassdescriptor(view:MTKView)
-    func setupRenderSceneDescriptor(view:MTKView)
-    func setupRenderLightSourceDescriptor(view:MTKView)
-    func setupGuassionBlurr(view:MTKView)
-    
-}
-
 class Renderer : NSObject {
     
     var device : MTLDevice?
@@ -25,20 +17,12 @@ class Renderer : NSObject {
     var commandQueue : MTLCommandQueue?
     var vertexBuffer : MTLBuffer?
     var indexBuffer : MTLBuffer?
-    var renderDelegate : RendererProtocol?
     
     var vertices : [Vertex] = [
-        Vertex(position: SIMD3<Float>(-1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.0, 0.0, 1.0)),
-        Vertex(position: SIMD3<Float>(-1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 1.0, 0.0, 1.0)),
-        Vertex(position: SIMD3<Float>(1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 0.0, 1.0, 1.0)),
-        Vertex(position: SIMD3<Float>(1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.0, 1.0, 1.0))
-    ]
-    
-    let vertexData : [Float] = [
-        -1.0 , 1.0 , 0 ,  //v0
-        -1.0 , -1.0 , 0 ,  //v1
-        1.0 , -1.0 , 0 ,
-         1.0 , 1.0 , 0
+        Vertex(position: SIMD3<Float>(-1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.0, 0.0, 1.0)), // red
+        Vertex(position: SIMD3<Float>(-1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 1.0, 0.0, 1.0)), // green
+        Vertex(position: SIMD3<Float>(1.0, -1.0, 0.0), color: SIMD4<Float>(0.0, 0.0, 1.0, 1.0)), // blue
+        Vertex(position: SIMD3<Float>(1.0, 1.0, 0.0), color: SIMD4<Float>(1.0, 0.5, 0.0, 1.0)) // orange
     ]
     
     var indices : [UInt16] = [
@@ -54,20 +38,12 @@ class Renderer : NSObject {
     
     var time : Float = 0
     
-    init(device: MTLDevice? = nil,delegate:RendererProtocol) {
+    init(device: MTLDevice? = nil) {
         self.device = device
         self.commandQueue = self.device?.makeCommandQueue()
         super.init()
         buildModel()
         setupPipelineState()
-        self.renderDelegate = delegate
-    }
-    
-    func initMetalView(view:MTKView) {
-        view.colorPixelFormat = .bgra8Unorm
-        view.framebufferOnly = true
-        view.delegate = self
-        view.clearColor = Colors.wenderlichGreen
     }
     
     func buildModel() {
@@ -121,8 +97,6 @@ class Renderer : NSObject {
         
         guard let pipelineState = self.pipelineState , let indexBuffer = indexBuffer else {return}
         
-        commandQueue = device?.makeCommandQueue()
-         
         let commandBuffer = commandQueue?.makeCommandBuffer()
         
         let commandEncoder = commandBuffer?.makeRenderCommandEncoder(descriptor: descriptor)
